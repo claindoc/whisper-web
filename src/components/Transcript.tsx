@@ -1,10 +1,17 @@
 import { useRef, useEffect } from "react";
 
 import { TranscriberData } from "../hooks/useTranscriber";
-import { formatAudioTimestamp } from "../utils/AudioUtils";
+import { formatAudioTimestamp,formatSRTTimestamp } from "../utils/AudioUtils";
 
 interface Props {
     transcribedData: TranscriberData | undefined;
+}
+
+// Function to format a chunk into SRT format
+function formatSRTChunk(index: number, chunk: { text: string; timestamp: [number, number | null] }): string {
+    const start= chunk.timestamp[0];
+    const end = chunk.timestamp[1]!;
+    return `${index}\n${formatSRTTimestamp(start)} --> ${formatSRTTimestamp(end)}\n${chunk.text}\n\n`;
 }
 
 export default function Transcript({ transcribedData }: Props) {
@@ -38,6 +45,18 @@ export default function Transcript({ transcribedData }: Props) {
         const blob = new Blob([jsonData], { type: "application/json" });
         saveBlob(blob, "transcript.json");
     };
+
+    const exportSRT = () => {
+        let chunks = transcribedData?.chunks ?? [];
+        
+        let text = chunks
+        .flatMap((chunk,index) => formatSRTChunk(index + 1, chunk))
+        .join("")
+        .trim();
+        const blob = new Blob([text], { type: "text/plain" });
+        saveBlob(blob, "transcript.srt");
+    };
+
 
     // Scroll to the bottom when the component updates
     useEffect(() => {
@@ -85,6 +104,13 @@ export default function Transcript({ transcribedData }: Props) {
                         className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center mr-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
                     >
                         Export JSON
+                    </button>
+
+                    <button
+                        onClick={exportSRT}
+                        className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center mr-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
+                    >
+                        Export SRT
                     </button>
                 </div>
             )}
